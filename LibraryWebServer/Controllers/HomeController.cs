@@ -90,14 +90,15 @@ namespace LibraryWebServer.Controllers
                     from j1 in inv.DefaultIfEmpty()
                     join c in db.CheckedOut on j1.Serial equals c.Serial into chkout
                     from j2 in chkout.DefaultIfEmpty()
-                    join p in db.Patrons on j2.CardNum equals p.CardNum
+                    join p in db.Patrons on j2.CardNum equals p.CardNum into pat
+                    from j3 in pat.DefaultIfEmpty()
                     select new
                     {
                         title = t.Title,
                         isbn = t.Isbn,
-                        serial = j1 == null ? null : (uint?)j2.Serial,
+                        serial = j1 == null ? null : (uint?)j1.Serial,
                         author = t.Author,
-                        name = (j2 == null) ? "" : p.Name
+                        name = (j2 == null) ? "" : j3.Name
                     };
                 
                 return Json(query.ToArray());
