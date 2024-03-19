@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.JavaScript;
 
 [assembly: InternalsVisibleTo( "TestProject1" )]
 namespace LibraryWebServer.Controllers
@@ -85,18 +86,20 @@ namespace LibraryWebServer.Controllers
                 // join Titles, Inventory, CheckedOut, Patrons
                 var query =
                     from t in db.Titles
-                    join i in db.Inventory on t.Isbn equals i.Isbn
-                    join c in db.CheckedOut on i.Serial equals c.Serial into chkout
+                    join i in db.Inventory on t.Isbn equals i.Isbn into inv
+                    from j1 in inv.DefaultIfEmpty()
+                    join c in db.CheckedOut on j1.Serial equals c.Serial into chkout
                     from j2 in chkout.DefaultIfEmpty()
                     join p in db.Patrons on j2.CardNum equals p.CardNum
                     select new
                     {
                         title = t.Title,
-                        isbn = i.Isbn,
-                        serial = j2 == null ? null : (uint?)j2.Serial,
+                        isbn = t.Isbn,
+                        serial = j1 == null ? null : (uint?)j2.Serial,
                         author = t.Author,
-                        name = p.Name
+                        name = (j2 == null) ? "" : p.Name
                     };
+                
                 return Json(query.ToArray());
 
             }
@@ -175,6 +178,7 @@ namespace LibraryWebServer.Controllers
                     select c;
 
                 db.CheckedOut.RemoveRange(query);
+                db.SaveChanges();
                 
                 return Json( new { success = true } );
             }
