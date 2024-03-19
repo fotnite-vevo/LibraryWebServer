@@ -31,8 +31,15 @@ namespace LibraryWebServer.Controllers
         [HttpPost]
         public IActionResult CheckLogin( string name, int cardnum )
         {
-            // TODO: Fill in. Determine if login is successful or not.
             bool loginSuccessful = false;
+            using (Team21LibraryContext db = new Team21LibraryContext())
+            {
+                var count = (from p in db.Patrons where p.CardNum == cardnum select p.Name).Count();
+                if (count == 1)
+                {
+                    loginSuccessful = true;
+                }
+            }
 
             if ( !loginSuccessful )
             {
@@ -73,9 +80,26 @@ namespace LibraryWebServer.Controllers
         public ActionResult AllTitles()
         {
 
-            // TODO: Implement
+            using (Team21LibraryContext db = new Team21LibraryContext())
+            {
+                // join Titles, Inventory, CheckedOut, Patrons
+                var query =
+                    from t in db.Titles
+                    join i in db.Inventory on t.Isbn equals i.Isbn
+                    join c in db.CheckedOut on i.Serial equals c.Serial into chkout
+                    from j2 in chkout.DefaultIfEmpty()
+                    join p in db.Patrons on j2.CardNum equals p.CardNum
+                    select new
+                    {
+                        title = t.Title,
+                        isbn = i.Isbn,
+                        serial = j2 == null ? null : (uint?)j2.Serial,
+                        author = t.Author,
+                        name = p.Name
+                    };
+                return Json(query.ToArray());
 
-            return Json( null );
+            }
 
         }
 
@@ -90,8 +114,22 @@ namespace LibraryWebServer.Controllers
         [HttpPost]
         public ActionResult ListMyBooks()
         {
-            // TODO: Implement
-            return Json( null );
+            using (Team21LibraryContext db = new Team21LibraryContext())
+            {
+                var query = from t in db.Titles
+                            join i in db.Inventory on t.Isbn equals i.Isbn
+                            join c in db.CheckedOut on i.Serial equals c.Serial
+                            where c.CardNum == card
+                            select new
+                            {
+                                title = t.Title,
+                                author = t.Author,
+                                serial = i.Serial
+                            };
+
+                return Json(query.ToArray());
+            }
+ 
         }
 
 
