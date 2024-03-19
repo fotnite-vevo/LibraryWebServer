@@ -144,10 +144,18 @@ namespace LibraryWebServer.Controllers
         [HttpPost]
         public ActionResult CheckOutBook( int serial )
         {
-            // You may have to cast serial to a (uint)
+            using (Team21LibraryContext db = new Team21LibraryContext())
+            {
+                CheckedOut c = new CheckedOut();
+                c.Serial = (uint) serial;
+                c.CardNum = (uint) card;
 
-
-            return Json( new { success = true } );
+                db.CheckedOut.Add(c);
+                db.SaveChanges();
+                return Json( new { success = true } );
+            }
+            
+            return Json( new { success = false } );
         }
 
         /// <summary>
@@ -160,9 +168,16 @@ namespace LibraryWebServer.Controllers
         [HttpPost]
         public ActionResult ReturnBook( int serial )
         {
-            // You may have to cast serial to a (uint)
+            using (Team21LibraryContext db = new Team21LibraryContext())
+            {
+                var query = from c in db.CheckedOut
+                    where c.Serial == serial
+                    select c;
 
-            return Json( new { success = true } );
+                db.CheckedOut.RemoveRange(query);
+                
+                return Json( new { success = true } );
+            }
         }
 
 
